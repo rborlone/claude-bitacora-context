@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Hook Stop / PreCompact: copia a la base las líneas nuevas del transcript de la sesión.
+// Hooks Stop / PreCompact / SessionEnd: copia a la base las líneas nuevas del transcript de la sesión.
 // Nunca debe romper la sesión: cualquier error se ignora en silencio.
 import { abrir } from '../db.js';
 import { importarTranscript } from '../transcript.js';

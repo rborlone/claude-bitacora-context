@@ -1,10 +1,12 @@
 {
   "name": "claude-bitacora-context",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Bitácora: memoria persistente para Claude Code con SQLite + FTS5, servidor MCP y hooks. Sin dependencias.",
   "type": "module",
   "private": true,
-  "engines": { "node": ">=22.13" },
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "importar-historial": "node --no-warnings importar-historial.js",
     "test": "node --no-warnings test.js"

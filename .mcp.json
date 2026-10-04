@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "bitacora": {
-      "command": "node",
-      "args": ["--no-warnings", "${CLAUDE_PLUGIN_ROOT}/server.js"]
-    }
-  }
-}

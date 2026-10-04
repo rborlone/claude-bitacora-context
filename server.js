@@ -90,7 +90,7 @@ function atender(msg) {
       return responder(id, {
         protocolVersion: params.protocolVersion || '2025-06-18',
         capabilities: { tools: {} },
-        serverInfo: { name: 'bitacora', version: '0.2.0' },
+        serverInfo: { name: 'bitacora', version: '0.2.1' },
         instructions: 'Memoria persistente entre sesiones. Busca con bitacora_buscar antes de preguntar al usuario algo ' +
           'que pudo tratarse antes; guarda con bitacora_guardar las decisiones, hechos y preferencias que valga la pena recordar.',
       });

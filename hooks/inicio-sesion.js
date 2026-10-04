@@ -9,11 +9,10 @@ try {
   const { cwd = process.cwd() } = leerEntrada();
   const db = abrir();
 
-  // Primera vez: importa el historial existente en segundo plano, sin demorar el inicio.
-  if (!db.prepare('SELECT 1 FROM importaciones LIMIT 1').get()) {
-    const script = fileURLToPath(new URL('../importar-historial.js', import.meta.url));
-    spawn(process.execPath, ['--no-warnings', script], { detached: true, stdio: 'ignore' }).unref();
-  }
+  // Importa en segundo plano los transcripts que cambiaron desde la última vez (la primera vez, todo el historial).
+  // Recoge también la respuesta final de sesiones anteriores, que el hook Stop puede no alcanzar a leer.
+  const script = fileURLToPath(new URL('../importar-historial.js', import.meta.url));
+  spawn(process.execPath, ['--no-warnings', script], { detached: true, stdio: 'ignore' }).unref();
 
   const proyecto = raizProyecto(cwd);
   const rs = recientes(db, { proyecto, limite: 15 });

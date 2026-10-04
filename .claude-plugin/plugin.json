@@ -1,8 +1,25 @@
 {
   "name": "bitacora",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Memoria persistente entre sesiones: guarda conversaciones y memorias en SQLite con búsqueda de texto completo, para recuperar lo que la compactación saca del contexto.",
-  "author": { "name": "Rodrigo Borlone" },
+  "author": {
+    "name": "Rodrigo Borlone"
+  },
   "repository": "https://github.com/rborlone/claude-bitacora-context",
-  "keywords": ["memoria", "contexto", "sqlite", "fts5", "mcp"]
+  "keywords": [
+    "memoria",
+    "contexto",
+    "sqlite",
+    "fts5",
+    "mcp"
+  ],
+  "mcpServers": {
+    "bitacora": {
+      "command": "node",
+      "args": [
+        "--no-warnings",
+        "${CLAUDE_PLUGIN_ROOT}/server.js"
+      ]
+    }
+  }
 }

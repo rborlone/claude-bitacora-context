@@ -25,7 +25,7 @@ Dentro de Claude Code:
 /plugin install bitacora@bitacora-context
 ```
 
-Reinicia Claude Code. En la primera sesión, Bitácora importa en segundo plano tu historial de conversaciones
+Reinicia Claude Code. Al iniciar cada sesión, Bitácora importa en segundo plano los transcripts que cambiaron; la primera vez, todo tu historial de conversaciones
 (`~/.claude/projects`), así que las sesiones anteriores también quedan disponibles para buscar.
 
 Para desinstalar: `/plugin uninstall bitacora@bitacora-context`. La base en `~/.bitacora/` no se borra; elimínala a mano si quieres.
@@ -38,7 +38,7 @@ Casi todo es automático:
 |---|---|
 | Inicias, reanudas o compactas una sesión | Claude recibe las memorias recientes del proyecto |
 | Claude termina cada respuesta | Los mensajes nuevos se guardan en la base |
-| Antes de compactar | Se guarda todo lo pendiente |
+| Antes de compactar y al cerrar la sesión | Se guarda todo lo pendiente |
 
 Y le hablas a Claude en lenguaje normal:
 
@@ -80,12 +80,11 @@ La ruta de la base se puede cambiar con la variable de entorno `BITACORA_DB`.
 
 | Archivo | Qué hace |
 |---|---|
-| `.claude-plugin/plugin.json` | Manifiesto del plugin |
+| `.claude-plugin/plugin.json` | Manifiesto del plugin; registra el servidor MCP |
 | `.claude-plugin/marketplace.json` | Permite instalar el repo con `/plugin marketplace add` |
-| `.mcp.json` | Registra el servidor MCP |
-| `hooks/hooks.json` | Registra los hooks `SessionStart`, `Stop` y `PreCompact` |
+| `hooks/hooks.json` | Registra los hooks `SessionStart`, `Stop`, `PreCompact` y `SessionEnd` |
 | `server.js` | Servidor MCP (stdio, JSON-RPC), sin SDK |
-| `hooks/inicio-sesion.js` | Inyecta las memorias recientes y lanza la importación inicial |
+| `hooks/inicio-sesion.js` | Inyecta las memorias recientes e importa en segundo plano los transcripts que cambiaron |
 | `hooks/guardar-transcript.js` | Copia los mensajes nuevos de la sesión a la base |
 | `importar-historial.js` | Importa todos los transcripts existentes (incremental, se puede repetir) |
 | `db.js`, `transcript.js` | Esquema, búsqueda e importación |
@@ -96,7 +95,7 @@ La ruta de la base se puede cambiar con la variable de entorno `BITACORA_DB`.
 npm test                         # pruebas (base en memoria + servidor MCP real)
 claude --plugin-dir .            # probar el plugin local sin instalarlo
 claude plugin validate .         # validar los manifiestos
-npm run importar-historial       # reimportar el historial a mano
+npm run importar-historial       # importar a mano lo que cambió (agrega -- --todo para revisar todo)
 ```
 
 ## Ideas para más adelante
