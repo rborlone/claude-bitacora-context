@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "timeout": 10, "command": "node --no-warnings \"${CLAUDE_PLUGIN_ROOT}/hooks/inicio-sesion.js\"" }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "timeout": 10, "command": "node --no-warnings \"${CLAUDE_PLUGIN_ROOT}/hooks/guardar-transcript.js\"" }] }
+    ],
+    "PreCompact": [
+      { "hooks": [{ "type": "command", "timeout": 10, "command": "node --no-warnings \"${CLAUDE_PLUGIN_ROOT}/hooks/guardar-transcript.js\"" }] }
+    ]
+  }
+}

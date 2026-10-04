@@ -1,0 +1,14 @@
+{
+  "name": "bitacora-context",
+  "owner": {
+    "name": "Rodrigo Borlone"
+  },
+  "description": "Bitácora: memoria persistente entre sesiones para Claude Code.",
+  "plugins": [
+    {
+      "name": "bitacora",
+      "source": "./",
+      "description": "Memoria persistente entre sesiones con SQLite + FTS5."
+    }
+  ]
+}

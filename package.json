@@ -1,7 +1,7 @@
 {
-  "name": "memoria-claude",
-  "version": "0.1.0",
-  "description": "Memoria persistente para Claude Code: SQLite + FTS5, servidor MCP y hooks. Sin dependencias.",
+  "name": "claude-bitacora-context",
+  "version": "0.2.0",
+  "description": "Bitácora: memoria persistente para Claude Code con SQLite + FTS5, servidor MCP y hooks. Sin dependencias.",
   "type": "module",
   "private": true,
   "engines": { "node": ">=22.13" },

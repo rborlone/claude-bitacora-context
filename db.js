@@ -1,10 +1,10 @@
-// Acceso a la base de memoria (SQLite + FTS5, incluido en Node >= 22.13).
+// Acceso a la base de la bitácora (SQLite + FTS5, incluido en Node >= 22.13).
 import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
-export const RUTA_DB = process.env.MEMORIA_DB || join(homedir(), '.memoria', 'memoria.db');
+export const RUTA_DB = process.env.BITACORA_DB || join(homedir(), '.bitacora', 'bitacora.db');
 
 export function abrir(ruta = RUTA_DB) {
   if (ruta !== ':memory:') mkdirSync(dirname(ruta), { recursive: true });
@@ -13,7 +13,7 @@ export function abrir(ruta = RUTA_DB) {
     PRAGMA journal_mode = WAL;
     PRAGMA busy_timeout = 3000;
 
-    -- Memorias curadas: hechos, decisiones, tareas, notas, resúmenes.
+    -- Memorias curadas: hechos, decisiones, tareas, notas, resúmenes, preferencias.
     CREATE VIRTUAL TABLE IF NOT EXISTS memorias USING fts5(
       texto, tags,
       proyecto UNINDEXED, tipo UNINDEXED, creado UNINDEXED,
@@ -34,6 +34,21 @@ export function abrir(ruta = RUTA_DB) {
     );
   `);
   return db;
+}
+
+// Un proyecto se identifica por la raíz de su repositorio git, para que abrir Claude en una
+// subcarpeta comparta la misma memoria. Fuera de un repo, se usa la carpeta tal cual.
+const cacheRaices = new Map();
+export function raizProyecto(dir) {
+  if (!dir) return '';
+  if (cacheRaices.has(dir)) return cacheRaices.get(dir);
+  let raiz = resolve(dir);
+  for (let d = raiz; ; d = dirname(d)) {
+    if (existsSync(join(d, '.git'))) { raiz = d; break; }
+    if (dirname(d) === d) break;
+  }
+  cacheRaices.set(dir, raiz);
+  return raiz;
 }
 
 // Convierte texto libre en una consulta FTS5 segura: cada palabra entre comillas, unidas con OR.

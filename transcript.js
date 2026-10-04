@@ -1,5 +1,6 @@
 // Importa transcripts JSONL de Claude Code a la tabla `mensajes`, de forma incremental.
 import { readFileSync } from 'node:fs';
+import { raizProyecto } from './db.js';
 
 const MAX = 4000;
 const corto = (s, n = MAX) => (s.length > n ? s.slice(0, n) + ' …[truncado]' : s);
@@ -50,7 +51,7 @@ export function importarTranscript(db, archivo) {
       let o; try { o = JSON.parse(lineas[i]); } catch { continue; }
       const m = extraer(o);
       if (!m || !m.texto.trim()) continue;
-      insertar.run(corto(m.texto), m.rol, o.sessionId || '', o.cwd || '', o.timestamp || '');
+      insertar.run(corto(m.texto), m.rol, o.sessionId || '', raizProyecto(o.cwd), o.timestamp || '');
       n++;
     }
     db.prepare(`INSERT INTO importaciones (archivo, lineas) VALUES (?, ?)
