@@ -1,0 +1,12 @@
+{
+  "name": "memoria-claude",
+  "version": "0.1.0",
+  "description": "Memoria persistente para Claude Code: SQLite + FTS5, servidor MCP y hooks. Sin dependencias.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "importar-historial": "node --no-warnings importar-historial.js",
+    "test": "node --no-warnings test.js"
+  }
+}
