@@ -32,6 +32,33 @@ export function abrir(ruta = RUTA_DB) {
       archivo TEXT PRIMARY KEY,
       lineas  INTEGER NOT NULL
     );
+
+    -- Documentación en markdown (wikis, docs, ADRs), troceada por sección.
+    CREATE VIRTUAL TABLE IF NOT EXISTS documentos USING fts5(
+      texto, titulo,
+      ruta UNINDEXED, fuente UNINDEXED,
+      tokenize = 'unicode61 remove_diacritics 2'
+    );
+
+    -- Carpetas o archivos de markdown registrados para reindexar solos.
+    CREATE TABLE IF NOT EXISTS fuentes (
+      ruta      TEXT PRIMARY KEY,
+      nombre    TEXT NOT NULL,
+      indexado  TEXT
+    );
+
+    -- Estado de cada archivo indexado, para reindexar solo lo que cambió.
+    CREATE TABLE IF NOT EXISTS docs_archivos (
+      ruta       TEXT PRIMARY KEY,
+      fuente     TEXT NOT NULL,
+      mtime      REAL NOT NULL,
+      fragmentos INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS estado (
+      clave TEXT PRIMARY KEY,
+      valor TEXT
+    );
   `);
   return db;
 }
@@ -51,11 +78,20 @@ export function raizProyecto(dir) {
   return raiz;
 }
 
-// Convierte texto libre en una consulta FTS5 segura: cada palabra entre comillas, unidas con OR.
-// El ranking BM25 deja arriba los resultados que coinciden con más palabras.
+// Palabras vacías: con OR, una coincidencia en "de" o "la" bastaría para traer cualquier documento.
+const VACIAS = new Set((
+  'a al algo con contra cual cuando de del desde donde el ella ellos en entre era es esa ese eso esta este esto fue ' +
+  'ha hay la las le les lo los mas me mi muy no nos o para pero por que se sea ser si sin sobre su sus tambien te tu un una ' +
+  'uno unos y ya yo como hacer hace qué cómo ' +
+  'an and are as at be by for from how in is it of on or that the this to was what when where which with'
+).split(' '));
+
+// Convierte texto libre en una consulta FTS5 segura: cada palabra entre comillas, unidas con OR, sin palabras vacías
+// (salvo que la consulta tenga solo palabras vacías). El ranking BM25 deja arriba lo que coincide con más palabras.
 export function consultaFts(texto) {
   const palabras = String(texto).match(/[\p{L}\p{N}_]+/gu) || [];
-  return palabras.map(p => `"${p}"`).join(' OR ');
+  const utiles = palabras.filter(p => !VACIAS.has(p.toLowerCase()));
+  return (utiles.length ? utiles : palabras).map(p => `"${p}"`).join(' OR ');
 }
 
 export function guardar(db, { texto, tipo = 'nota', proyecto = '', tags = '' }) {
@@ -65,9 +101,10 @@ export function guardar(db, { texto, tipo = 'nota', proyecto = '', tags = '' }) 
   return Number(r.lastInsertRowid);
 }
 
-export function buscar(db, { consulta, proyecto, limite = 10, incluirHistorial = true }) {
+// Los documentos no se filtran por proyecto: una wiki suele servir a varios repos.
+export function buscar(db, { consulta, proyecto, limite = 10, incluirHistorial = true, incluirDocumentos = true }) {
   const q = consultaFts(consulta);
-  if (!q) return { memorias: [], mensajes: [] };
+  if (!q) return { memorias: [], mensajes: [], documentos: [] };
   const filtro = proyecto ? 'AND proyecto = ?' : '';
   const args = proyecto ? [q, proyecto, limite] : [q, limite];
 
@@ -82,7 +119,15 @@ export function buscar(db, { consulta, proyecto, limite = 10, incluirHistorial =
     FROM mensajes WHERE mensajes MATCH ? ${filtro}
     ORDER BY bm25(mensajes) LIMIT ?`).all(...args) : [];
 
-  return { memorias, mensajes };
+  // El título pesa más que el cuerpo en el ranking.
+  const documentos = incluirDocumentos ? db.prepare(`
+    SELECT x.*, f.nombre FROM (
+      SELECT rowid AS id, titulo, ruta, fuente, bm25(documentos, 1.0, 3.0) AS rango,
+             snippet(documentos, 0, '«', '»', ' … ', 40) AS fragmento
+      FROM documentos WHERE documentos MATCH ? ORDER BY rango LIMIT ?
+    ) x LEFT JOIN fuentes f ON f.ruta = x.fuente ORDER BY x.rango`).all(q, limite) : [];
+
+  return { memorias, mensajes, documentos };
 }
 
 export function recientes(db, { proyecto, limite = 15 }) {

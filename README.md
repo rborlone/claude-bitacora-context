@@ -6,9 +6,12 @@ Claude Code compacta la conversación cuando se llena el contexto, y en ese resu
 guarda cada conversación y las memorias importantes (decisiones, hechos, preferencias) en una base SQLite local
 con búsqueda de texto completo. Así Claude puede recuperar lo que salió del contexto, también en sesiones futuras.
 
+También indexa documentación en markdown (wikis, docs, ADRs), de modo que una sola búsqueda cubre memorias,
+conversaciones y documentos.
+
 - **Sin dependencias:** usa `node:sqlite`, que viene con Node. No hay `npm install`.
 - **Local:** todo queda en `~/.bitacora/bitacora.db`; nada sale de tu máquina.
-- **Rápida:** 70 MB de transcripts quedan en una base de ~3 MB; una búsqueda tarda unos 60 ms.
+- **Rápida:** 70 MB de transcripts quedan en una base de ~3 MB; una wiki de 30 páginas se indexa en ~0,1 s y una búsqueda tarda milisegundos.
 - **Un proyecto = un repo git:** las memorias se separan por la raíz del repositorio, aunque abras Claude en una subcarpeta.
 
 ## Requisitos
@@ -38,6 +41,7 @@ Casi todo es automático:
 |---|---|
 | Inicias, reanudas o compactas una sesión | Claude recibe las memorias recientes del proyecto |
 | Claude termina cada respuesta | Los mensajes nuevos se guardan en la base |
+| Inicias una sesión | Se reindexa en segundo plano la documentación que cambió |
 | Antes de compactar y al cerrar la sesión | Se guarda todo lo pendiente |
 
 Y le hablas a Claude en lenguaje normal:
@@ -47,17 +51,21 @@ Y le hablas a Claude en lenguaje normal:
 - *"¿Qué memorias tienes de este proyecto?"*
 - *"Busca en todos los proyectos cómo configuramos Serilog"*
 - *"Olvida la memoria #12, ya no aplica"*
+- *"Indexa la wiki que está en ~/Proyectos/DRP/drp-wiki"*
+- *"¿Qué dice la wiki sobre el RTO de la base de datos?"*
 
 ### Herramientas MCP
 
 | Herramienta | Qué hace |
 |---|---|
 | `bitacora_guardar` | Guarda una memoria: `hecho`, `decision`, `tarea`, `nota`, `resumen` o `preferencia` |
-| `bitacora_buscar` | Busca en las memorias y en el historial de conversaciones. Ignora tildes y mayúsculas |
+| `bitacora_buscar` | Busca en las memorias, el historial de conversaciones y la documentación indexada. Ignora tildes, mayúsculas y palabras vacías ("de", "la", "the"…) |
+| `bitacora_indexar` | Indexa una carpeta o archivo de markdown y lo registra como fuente. Sin ruta, reindexa y lista las fuentes; con `quitar: true`, la quita |
 | `bitacora_recientes` | Lista las memorias más recientes del proyecto |
 | `bitacora_olvidar` | Borra una memoria por id |
 
-Por defecto todas trabajan sobre el proyecto actual; con `proyecto: "*"` abarcan todos.
+Las memorias y el historial se filtran por el proyecto actual; con `proyecto: "*"` abarcan todos. La documentación
+no se filtra por proyecto, porque una wiki suele servir a varios repos: cada resultado indica de qué fuente viene.
 
 ### Consultas directas
 
@@ -70,6 +78,11 @@ sqlite3 ~/.bitacora/bitacora.db "SELECT rowid, tipo, texto FROM memorias WHERE m
 - **Memorias:** lo que Claude guarda explícitamente con `bitacora_guardar`.
 - **Historial:** los mensajes de texto del usuario y de Claude, más una línea por cada herramienta usada
   (por ejemplo `[Bash] Listar tablas`). No se guarda el razonamiento interno ni la salida de las herramientas.
+- **Documentación:** los `.md` de las fuentes registradas, divididos por sección (`#`, `##`, `###`), con un título
+  del tipo `Carpeta / Página › Sección`. Se omiten las carpetas ocultas (`.git`, `.attachments`) y `node_modules`.
+  Los nombres de archivo de las wikis de Azure DevOps (`Mi-Página%2D1.md`) se convierten en títulos legibles.
+
+  Bitácora lee la carpeta tal como está en disco: para una wiki clonada con git, haz `git pull` para traer cambios.
 
 > El historial incluye lo que escribes en las conversaciones. Si alguna vez pegaste credenciales en un prompt,
 > también quedan en la base: trátala como tratas `~/.claude/projects`.
@@ -84,9 +97,10 @@ La ruta de la base se puede cambiar con la variable de entorno `BITACORA_DB`.
 | `.claude-plugin/marketplace.json` | Permite instalar el repo con `/plugin marketplace add` |
 | `hooks/hooks.json` | Registra los hooks `SessionStart`, `Stop`, `PreCompact` y `SessionEnd` |
 | `server.js` | Servidor MCP (stdio, JSON-RPC), sin SDK |
-| `hooks/inicio-sesion.js` | Inyecta las memorias recientes e importa en segundo plano los transcripts que cambiaron |
+| `hooks/inicio-sesion.js` | Inyecta las memorias recientes e importa en segundo plano lo que cambió |
 | `hooks/guardar-transcript.js` | Copia los mensajes nuevos de la sesión a la base |
-| `importar-historial.js` | Importa todos los transcripts existentes (incremental, se puede repetir) |
+| `importar-historial.js` | Importa los transcripts y reindexa la documentación que cambió (incremental, se puede repetir) |
+| `documentos.js` | Troceo por sección e indexado incremental de markdown |
 | `db.js`, `transcript.js` | Esquema, búsqueda e importación |
 
 ## Desarrollo
@@ -103,3 +117,4 @@ npm run importar-historial       # importar a mano lo que cambió (agrega -- --t
 - Búsqueda semántica con embeddings locales (Ollama) y la extensión `sqlite-vec`
 - Resumen automático de cada sesión al compactar
 - Memoria compartida entre varios agentes (PO, DBA, arquitecto…)
+- Filtrar la documentación por ámbito (por ejemplo, solo las wikis de un cliente)

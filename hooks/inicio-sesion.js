@@ -9,7 +9,7 @@ try {
   const { cwd = process.cwd() } = leerEntrada();
   const db = abrir();
 
-  // Importa en segundo plano los transcripts que cambiaron desde la última vez (la primera vez, todo el historial).
+  // Importa en segundo plano los transcripts y la documentación que cambiaron desde la última vez (la primera vez, todo el historial).
   // Recoge también la respuesta final de sesiones anteriores, que el hook Stop puede no alcanzar a leer.
   const script = fileURLToPath(new URL('../importar-historial.js', import.meta.url));
   spawn(process.execPath, ['--no-warnings', script], { detached: true, stdio: 'ignore' }).unref();
@@ -18,7 +18,7 @@ try {
   const rs = recientes(db, { proyecto, limite: 15 });
   const lineas = [
     '# Bitácora: memoria persistente (servidor MCP "bitacora")',
-    'Herramientas: bitacora_buscar (memorias + conversaciones pasadas, incluso compactadas), bitacora_guardar, bitacora_recientes, bitacora_olvidar.',
+    'Herramientas: bitacora_buscar (memorias + conversaciones pasadas, incluso compactadas + documentación indexada), bitacora_guardar, bitacora_indexar, bitacora_recientes, bitacora_olvidar.',
     'Antes de preguntar algo que pudo tratarse en otra sesión, búscalo. Guarda decisiones, hechos y preferencias que valga la pena recordar.',
   ];
   if (rs.length) {
